@@ -14,7 +14,7 @@ from datetime import datetime
 apihelper.CONNECT_TIMEOUT = 60
 apihelper.READ_TIMEOUT = 60
 
-TOKEN = "8636472910:AAEbpzh5B4qJwvrVUKWMaO8L3W03A4dyKaU"
+TOKEN = "_"
 
 bot = telebot.TeleBot(TOKEN)
 

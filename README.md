@@ -3,7 +3,7 @@
 > A Telegram bot for tracking cryptocurrency prices, analyzing trends, and sending alerts
 
 <p align="center">
-  <img src="assets/banner.jpg" alt="Cryptocurrency banner" width="800">
+  <img src="assets/Banner.jpg" alt="Cryptocurrency banner" width="800">
 </p>
 
 # 🎌 Anime Stats Telegram Bot

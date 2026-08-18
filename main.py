@@ -14,7 +14,7 @@ from datetime import datetime
 apihelper.CONNECT_TIMEOUT = 60
 apihelper.READ_TIMEOUT = 60
 
-TOKEN = "_"
+TOKEN = "YOUR_BOT_TOKEN_HERE"
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -27,12 +27,13 @@ class MarketMonitor:
         self.thread = None
 
     def set_chat_id(self, chat_id):
-        """Устанавливает ID чата для уведомлений"""
+        """Sets the chat ID for notifications"""
+
         self.chat_id = chat_id
-        logging.info(f"Chat ID установлен: {chat_id}")
+        logging.info(f"The Chat ID is set: {chat_id}")
 
     def get_current_prices(self):
-        """Получает текущие цены для всех монет."""
+        """Gets the current prices for all coins."""
 
         symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT", "SHIBUSDT", "PEPEUSDT"]
         prices = {}
@@ -45,16 +46,16 @@ class MarketMonitor:
                 prices[symbol] = float(data["price"])
 
                 print(
-                    f"Получилось отыскать: {symbol}, его прайс сейчас -> {data["price"]}."
+                    f"I managed to find: {symbol}, his price list is now -> {data["price"]}."
                 )
             except Exception as e:
-                logging.error(f"Ошибка получения цены {symbol}: {e}")
+                logging.error(f" {symbol}: {e}")
                 prices[symbol] = None
 
         return prices
 
     def check_market_prices(self):
-        """Проверяет изменения цен и отправляет уведомления."""
+        """Checks price changes and sends notifications."""
 
         if self.chat_id is None:
             return
@@ -70,7 +71,7 @@ class MarketMonitor:
             if symbol not in self.last_prices:
                 self.last_prices[symbol] = current_price
                 print(
-                    f"Символа {symbol} не было найдено в last_prices, добавили его, к-в - {current_price}"
+                    f"The symbol {symbol} was not found in last_prices, added it, quantity - {current_price}"
                 )
                 continue
 
@@ -88,55 +89,58 @@ class MarketMonitor:
 
                 if change_procent > 0:
                     emoji = "🚀"
-                    direction = "ВВЕРХ"
+                    direction = "UP"
                 else:
                     emoji = "📉"
-                    direction = "ВНИЗ"
+                    direction = "DOWN"
 
                 message = (
-                    f"{emoji} *СИГНАЛ! {symbol}*\n\n"
-                    f"💰 Цена: {price_str}\n"
-                    f"📊 Изменение: {change_procent:+.2f}%\n"
-                    f"🔄 Движение: {direction}\n"
-                    f"📉 Было: {old_price_str}\n"
-                    f"📈 Стало: {price_str}\n\n"
-                    f"_Мониторинг рынка активен_"
+                    f"{emoji} *SIGNAL! {symbol}*\n\n"
+                    f"💰 Pricec: {price_str}\n"
+                    f"📊 Changes: {change_procent:+.2f}%\n"
+                    f"🔄 Movement: {direction}\n"
+                    f"📉 There was: {old_price_str}\n"
+                    f"📈 It became: {price_str}\n\n"
+                    f"_Market monitoring is active_"
                 )
 
                 try:
                     bot.send_message(self.chat_id, message)
                     logging.info(
-                        f"Отправлено уведомление о {symbol} ({change_procent:+.2f})"
+                        f"A notification has been sent about {symbol} ({change_procent:+.2f})"
                     )
                 except Exception as e:
-                    logging.error(f"Ошибка отправки уведомления: {e}")
+                    logging.error(f"Error sending notification: {e}")
 
                 self.last_prices[symbol] = current_price
 
     def start_monitoring(self):
-        """Запускает мониторинг в фоновом потоке."""
+        """Starts monitoring in the background thread."""
 
         if self.running:
-            logging.info("⚠️ Мониторинг уже запущен")
+            logging.info("⚠️ Monitoring has already been started")
             return
         self.running = True
 
         def monitor_looping():
-            logging.info("Мониторинг рынка запущен (проверка каждые 5 минут).")
+            logging.info(
+                "Market monitoring has been started (checking every 5 minutes)."
+            )
             while self.running:
                 try:
                     self.check_market_prices()
                 except Exception as e:
-                    logging.error(f"Ошибка в мониторинге: {e}")
+                    logging.error(f"Error in monitoring: {e}")
                 time.sleep(300)
 
         self.thread = threading.Thread(target=monitor_looping, daemon=True)
         self.thread.start()
 
     def stop_monitoring(self):
-        """Останавливает мониторинг"""
+        """Stops monitoring"""
+
         self.running = False
-        logging.info("⏹️ Мониторинг рынка остановлен")
+        logging.info("⏹️ Market monitoring stopped")
 
 
 market_monitor = MarketMonitor()
@@ -144,8 +148,9 @@ market_monitor = MarketMonitor()
 
 def save_price_to_history(symbol, price):
     """
-    Сораняет цену монеты с временной меткой в CSV файл
+    Saves the coin price with a timestamp in a CSV file
     """
+
     filename = "price_history.csv"
 
     if os.path.exists(filename):
@@ -163,29 +168,29 @@ def save_price_to_history(symbol, price):
 
     df = pd.concat([df, new_row], ignore_index=True)
     df.to_csv(filename, index=False)
-    print(f"Сохранена цена {symbol}: {price:.4f}")
+    print(f"The price has been saved {symbol}: {price:.4f}")
 
 
 def get_price_history(symbol, hours=24):
     """
-    Загружает историю цен для указанной монеты за последние N часов.
-    Если файла нет, или он пустой - создает новый, с правильными колонками.
-    Возвращает DataFrame или None - если данных недостаточно.
+    Loads the price history for the specified coin for the last N hours.
+    If there is no file or it is empty, it creates a new one with the correct columns.
+    Returns a DataFrame or None if there is not enough data.
     """
 
     filename = "price_history.csv"
 
-    # Проверка - есть ли файл
+    # Checking if there is a file
     if not os.path.exists(filename):
-        print(f"Файл: {filename} не найден - создаю новый.")
+        print(f"The file: {filename} not found, creating a new one.")
 
         empty_df = pd.DataFrame(columns=["timestamp", "symbol", "price"])
         empty_df.to_csv(filename, index=False)
         return None
 
-    # Проверка - не пустой ли файл.
+    # Checking if the file is empty.
     if os.path.getsize(filename) == 0:
-        print(f"Файл: {filename} пустой. Записываю заголовки.")
+        print(f"The file: {filename} is empty. Writing down the headlines.")
 
         empty_df = pd.DataFrame(columns=["timestamp", "symbol", "price"])
         empty_df.to_csv(filename, index=False)
@@ -195,18 +200,18 @@ def get_price_history(symbol, hours=24):
         df = pd.read_csv(filename)
 
     except pd.errors.EmptyDataError:
-        print(f"Файл {filename} пуст или поврежден - пересоздаю.")
+        print(f"The file: {filename} is empty or damaged - re-creating.")
 
         empty_df = pd.DataFrame(columns=["timestamp", "symbol", "price"])
         empty_df.to_csv(filename, index=False)
         return None
     except Exception as e:
-        print(f"Неизвестная ошибка при чтении {filename}: {e}")
+        print(f"Unknown reading error {filename}: {e}")
         return None
 
     required_columns = ["timestamp", "symbol", "price"]
     if not (all in df.columns for col in required_columns):
-        print(f"В файле {filename} нет нужных заголовков - пересоздаю.")
+        print(f"In the file {filename} recreate them.")
         empty_df = pd.DataFrame(columns=["timestamp", "symbol", "price"])
         empty_df.to_csv(filename, index=False)
         return None
@@ -215,7 +220,7 @@ def get_price_history(symbol, hours=24):
     df_symbol = df[df["symbol"] == symbol]
 
     if len(df_symbol) == 0:
-        print(f"Нет данных по символу {symbol} в истории.")
+        print(f"There is no data on the symbol {symbol} in history.")
         return None
 
     cutoff = datetime.now() - pd.Timedelta(hours=hours)
@@ -223,7 +228,7 @@ def get_price_history(symbol, hours=24):
 
     if len(df_symbol) < 2:
         print(
-            f"Неддостаточно данных по {symbol} за последние {hours} часов (нужно >= 2 точек)."
+            f"Insufficient data on {symbol} for the last {hours} hours (need >= 2 points)."
         )
         return None
 
@@ -232,13 +237,13 @@ def get_price_history(symbol, hours=24):
 
 def get_daily_stats(symbol):
     """
-    Возвращает полную статистику по монете за последние 24 часа:
-    - Начальная цена.
-    - Текущая цена.
-    - Изменение в процентах.
-    - Максимум.
-    - Минимум.
-    - Средняя цена
+    Returns full coin statistics for the last 24 hours:
+    - The initial price.
+    - Current price.
+    - Percentage change.
+    - Maximum.
+    - Minimum.
+    - Average price
     """
 
     df = get_price_history(symbol, 24)
@@ -253,21 +258,21 @@ def get_daily_stats(symbol):
     avg_price = df["price"].mean()
 
     if change_percent > 1.0:
-        trend = "🟢 Восходящий тренд (+)"
+        trend = "🟢 Uptrend (+)"
     elif change_percent < -1.0:
-        trend = "🔴 Нисходящий тренд (-)"
+        trend = "🔴 Downtrend (-)"
     else:
-        trend = "🟡 Боковик (флэт)"
+        trend = "🟡 Sidewall (flat)"
 
     message = (
-        f"📊 *Ежедневный отчет {symbol}*\n\n"
-        f"🔹 Первая цена в периоде {first_price:,.2f}\n"
-        f"🔸 Текущая цена {last_price:,.2f}\n"
-        f"📈 Изменение {change_percent:+.2f}%\n"
-        f"📊 Средняя цена {avg_price:,.2f}\n"
-        f"📈 Максимум {max_price:,.2f}\n"
-        f"📉 Минимум {min_price:,.2f}\n\n"
-        f"🧠 Тренд {trend}"
+        f"📊 *Daily report {symbol}*\n\n"
+        f"🔹 The first price in the period {first_price:,.2f}\n"
+        f"🔸 Current price {last_price:,.2f}\n"
+        f"📈 Changes {change_percent:+.2f}%\n"
+        f"📊 Ang price {avg_price:,.2f}\n"
+        f"📈 Maximum {max_price:,.2f}\n"
+        f"📉 Minimum {min_price:,.2f}\n\n"
+        f"🧠 Trend {trend}"
     )
 
     return message
@@ -275,14 +280,14 @@ def get_daily_stats(symbol):
 
 def create_price_chart(symbol, hours=24):
     """
-    Строит график цены для указанной монеты за последние N часов.
-    Возвращает путь к файлу с графиком.
+    Plots the price chart for the specified coin over the last N hours.
+    Returns the path to the graph file.
     """
 
     df = get_price_history(symbol, hours)
 
     if df is None or len(df) < 2:
-        print(f"⚠️ Недостаточно данных для графика {symbol}. Нужно минимум 2 точки.")
+        print(f"⚠️ Not enough data for the graph {symbol}. You need at least 2 points.")
         return None
 
     plt.figure(figsize=(12, 6))
@@ -311,14 +316,15 @@ def create_price_chart(symbol, hours=24):
 
 
 def handle_error(error_type, e):
-    """Централизированная обработка ошибок"""
+    """Centralized error handling"""
+
     errors_map = {
-        requests.exceptions.ConnectionError: "Нет соединения с интернетом.",
-        KeyError: "Ошибка данных от биржи.",
-        requests.exceptions.Timeout: "Биржа долго не отвечает.",
+        requests.exceptions.ConnectionError: "There is no internet connection.",
+        KeyError: "Data error from the exchange.",
+        requests.exceptions.Timeout: "The exchange does not respond for a long time.",
     }
 
-    user_message = errors_map.get(error_type, "Неизвестная ошибка.")
+    user_message = errors_map.get(error_type, "Unknown error.")
 
     print(f"{error_type.__name__}: {e}")
     return user_message
@@ -326,12 +332,13 @@ def handle_error(error_type, e):
 
 def get_bitcoin_status(symbol):
     """
-    Получает статус любой криптовалюты с Binance.
-    Аргументы:
-        symbol (str): Например, 'BTCUSDT', 'ETHUSDT', 'SOLUSDT'
-    Возвращает:
-        str: Готовое сообщение для пользователя
+    Gets the status of any cryptocurrency with Binance.
+    Arguments:
+        symbol (str): For example, 'BTCUSDT', 'ETHUSDT', 'SOLUSDT'
+    Returns:
+        str: Ready message for the user
     """
+
     try:
         url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}"
         responce = requests.get(url)
@@ -341,22 +348,24 @@ def get_bitcoin_status(symbol):
         price_change_percent = float(data["priceChangePercent"])
 
         if price_change_percent > 3.0:
-            status = "🚀 СИЛЬНЫЙ РОСТ (Быки) - Можно присматриваться"
+            status = "🚀 STRONG GROWTH (Bulls) - You can look closely"
         elif price_change_percent > 0.5:
-            status = "📈 ЛЕГКИЙ РОСТ - Спокойно, возможно движение вверх"
+            status = "📈 EASY GROWTH - Calm, possible upward movement"
         elif price_change_percent < -3.0:
-            status = "📉 СИЛЬНОЕ ПАДЕНИЕ (Медведи) - Покупать рано, жди дна"
+            status = (
+                "📉 HEAVY FALL (Bears) - It's too early to buy, wait for the bottom"
+            )
         elif price_change_percent < -0.5:
-            status = "📉 НЕБОЛЬШОЕ ПАДЕНИЕ - Коррекция"
+            status = "📉 A SLIGHT DROP IS A Correction"
         else:
-            status = "⏸️ БОКОВИК (Флэт) - Ничего не делаем, просто наблюдаем"
+            status = "⏸️ SIDEWAYS (Flat) - We don't do anything, just watch"
 
         message = (
-            f"📊 *Аналитика {symbol}* 📊\n\n"
-            f"💰 Цена: `${current_price:,.4f}`\n"
-            f"📊 Изменение за 24ч: `{price_change_percent:+.2f}%`\n\n"
-            f"🧠 Сигнал: {status}\n\n"
-            f"_Данные с Binance. Это не финансовая рекомендация!_"
+            f"📊 *Analytics {symbol}* 📊\n\n"
+            f"💰 Price: `${current_price:,.4f}`\n"
+            f"📊 Changes: за 24ч: `{price_change_percent:+.2f}%`\n\n"
+            f"🧠 The signal: {status}\n\n"
+            f"_Data from Binance. This is not a financial recommendation!_"
         )
 
         save_price_to_history(symbol, current_price)
@@ -370,9 +379,9 @@ def get_bitcoin_status(symbol):
 def send_welcome(message):
     bot.reply_to(
         message,
-        "Привет, инвестор!\n"
-        "Я твой крипто-ассистент. Я умею анализировать текущую ситуацию по биткоину.\n\n"
-        "Нажми - /status, чтобы узнать, что сейчас происходит на рынке.",
+        "Hello, investor!\n"
+        "I'm your crypto assistant. I am able to analyze the current bitcoin situation.\n\n"
+        "Press - /status to find out what is happening on the market right now.",
     )
 
 
@@ -381,33 +390,33 @@ def send_help(message):
     markup = types.InlineKeyboardMarkup(row_width=2)
 
     btn_graph_btc = types.InlineKeyboardButton(
-        "📈 График BTC", callback_data="graph_btc"
+        "📈 BTC Chart", callback_data="graph_btc"
     )
     btn_graph_eth = types.InlineKeyboardButton(
-        "📈 График ETH", callback_data="graph_eth"
+        "📈 ETH Chart", callback_data="graph_eth"
     )
     btn_graph_sol = types.InlineKeyboardButton(
-        "📈 График SOLANA", callback_data="graph_sol"
+        "📈 SOLANA Chart", callback_data="graph_sol"
     )
     btn_graph_doge = types.InlineKeyboardButton(
-        "📈 График DOGE", callback_data="graph_doge"
+        "📈 DOGE Chart", callback_data="graph_doge"
     )
     btn_graph_shib = types.InlineKeyboardButton(
-        "📈 График SHIB", callback_data="graph_shib"
+        "📈 SHIB Chart", callback_data="graph_shib"
     )
     btn_graph_pepe = types.InlineKeyboardButton(
-        "📈 График PEPE", callback_data="graph_pepe"
+        "📈 Chart PEPE", callback_data="graph_pepe"
     )
 
-    btn_faq = types.InlineKeyboardButton("❓ О боте", callback_data="faq")
-    btn_status = types.InlineKeyboardButton("Текущий курс", callback_data="status")
+    btn_faq = types.InlineKeyboardButton("❓ About bot", callback_data="faq")
+    btn_status = types.InlineKeyboardButton("current course", callback_data="status")
 
-    btn_btc = types.InlineKeyboardButton("₿ Биткоин", callback_data="btc")
-    btn_eth = types.InlineKeyboardButton("⟠ Эфир", callback_data="eth")
-    btn_sol = types.InlineKeyboardButton("◎ Солана", callback_data="sol")
-    btn_doge = types.InlineKeyboardButton("🐕 Догекоин", callback_data="doge")
-    btn_shib = types.InlineKeyboardButton("🐕 Шибкоин", callback_data="shib")
-    btn_pepe = types.InlineKeyboardButton("🐍 Пепекоин", callback_data="pepe")
+    btn_btc = types.InlineKeyboardButton("₿ Bitcoin", callback_data="btc")
+    btn_eth = types.InlineKeyboardButton("⟠ Ether", callback_data="eth")
+    btn_sol = types.InlineKeyboardButton("◎ Solana", callback_data="sol")
+    btn_doge = types.InlineKeyboardButton("🐕 Dogecoin", callback_data="doge")
+    btn_shib = types.InlineKeyboardButton("🐕 Shibcoin", callback_data="shib")
+    btn_pepe = types.InlineKeyboardButton("🐍 Pepecoin", callback_data="pepe")
 
     markup.add(
         btn_graph_btc,
@@ -421,28 +430,28 @@ def send_help(message):
     markup.add(btn_btc, btn_eth, btn_sol, btn_doge, btn_shib, btn_pepe)
 
     help_text = """
- 🤖 *Крипто-Ассистент*
+ 🤖 *Crypto Assistant*
 
- Привет я умею анализировать ситуацию на рынке криптовалют.
+ Hi, I can analyze the situation on the cryptocurrency market.
 
- *Доступные Команды:*
- • /start - Запустить бота.
- • /help - Открыть данное меню.
- • /status - Показать курс Биткоина.
+ *Available Commands:*
+ • /start - Launch the bot.
+ • /help - Open this menu.
+ • /status - Show the Bitcoin exchange rate.
 
- 🔄 *Автоматический мониторинг:*
-• /start_monitor — Включить мониторинг рынка
-• /stop_monitor — Выключить мониторинг
-• /status_monitor — Статус мониторинга
+ 🔄 *Automatic monitoring:*
+• /start_monitor — Enable market monitoring
+• /stop_monitor — Turn off monitoring
+• /status_monitor — Monitoring status
 
- *Нажми на кнопку ниже чтобы перейти к необходимому разделу:*
+ *Click on the button below to go to the required section.:*
     """
     bot.send_message(message.chat.id, help_text, reply_markup=markup)
 
 
 @bot.message_handler(commands=["graph"])
 def send_graph(message):
-    bot.reply_to(message, "⏳ Строю график Биткоина за последние 24 часа...")
+    bot.reply_to(message, "⏳ I'm charting Bitcoin over the last 24 hours...")
 
     chart_file = create_price_chart("BTCUSDT", 24)
 
@@ -450,18 +459,18 @@ def send_graph(message):
 
     if chart_file:
         with open(chart_file, "rb") as f:
-            bot.send_photo(message.chat.id, f, caption="📈 График BTCUSDT за 24 часа")
+            bot.send_photo(message.chat.id, f, caption="📈 BTCUSDT 24-hour chart")
         os.remove(chart_file)
     else:
         bot.send_message(
             message.chat.id,
-            "❌ Недостаточно данных для построения графика. Подождите, пока наберется история.",
+            "❌ There is not enough data to build a graph. Wait until you have a story.",
         )
 
 
 @bot.message_handler(commands=["status"])
 def send_status(message):
-    bot.reply_to(message, "⏳ Смотрю на биржу...")
+    bot.reply_to(message, "⏳ I'm looking at the stock exchange...")
     time.sleep(1)
 
     report = get_bitcoin_status("BTCUSDT")
@@ -485,7 +494,7 @@ def buttons_interacte(call):
             symbol = crypto_map[coin_key]
 
             bot.send_message(
-                call.message.chat.id, f"⏳ Строю график {symbol} за 24 часа..."
+                call.message.chat.id, f"⏳ I'm building a graph {symbol} in 24 hours..."
             )
 
             chart_file = create_price_chart(symbol, 24)
@@ -495,37 +504,37 @@ def buttons_interacte(call):
                     bot.send_photo(
                         call.message.chat.id,
                         f,
-                        caption=f"📈 График {symbol} за последние 24 часа",
+                        caption=f"📈 Chart {symbol} in the last 24 hours",
                     )
 
                 os.remove(chart_file)
             else:
                 bot.send_message(
                     call.message.chat.id,
-                    f"❌ Недостаточно данных для {symbol}. Бот только начал собирать историю. Сделайте несколько запросов /status и попробуйте снова.",
+                    f"❌ Not enough data for {symbol}. The bot has just started collecting history. Make a few requests /status and try again.",
                 )
 
             bot.answer_callback_query(call.id)
     elif call.data == "status":
-        bot.send_message(call.message.chat.id, "⏳ Смотрю на биржу...")
+        bot.send_message(call.message.chat.id, "⏳ looking at the stock exchange...")
         time.sleep(1)
         report = get_bitcoin_status("BTCUSDT")
         bot.send_message(call.message.chat.id, report)
         bot.answer_callback_query(call.id)
     elif call.data == "faq":
-        bot.answer_callback_query(call.id, "Информация о боте:")
+        bot.answer_callback_query(call.id, "Information about the bot:")
         bot.send_message(
             call.message.chat.id,
-            "🤖 *О боте*\n\nЭтот бот написан на Python с использованием библиотеки pyTelegramBotAPI.\n"
-            "Данные берутся с биржи Binance.\n\n"
-            "🚀 Версия: 1.0\n"
-            "📅 Создан в 2026 году русским программистом-разработчиком и одновременно блогером:\n"
+            "🤖 *О боте*\n\nThis bot is written in Python using the pyTelegramBotAPI library.\n"
+            "\n\n"
+            "🚀 Version: 1.0\n"
+            "📅 It was created in 2026 by a Russian programmer-developer and at the same time a blogger.:\n"
             "// ATS PROFI ||",
         )
         bot.answer_callback_query(call.id)
     elif call.data in crypto_map:
         symbol = crypto_map[call.data]
-        bot.send_message(call.message.chat.id, f"Анализирую {symbol}...")
+        bot.send_message(call.message.chat.id, f"Analyzing {symbol}...")
         time.sleep(1)
         report = get_bitcoin_status(symbol)
         bot.send_message(call.message.chat.id, report)
@@ -534,7 +543,7 @@ def buttons_interacte(call):
 
 @bot.message_handler(commands="start_monitor")
 def start_monitor(message):
-    """Включает автоматический мониооринг."""
+    """Enables automatic monitoring."""
     chat_id = message.chat.id
 
     market_monitor.set_chat_id(chat_id)
@@ -542,34 +551,36 @@ def start_monitor(message):
 
     bot.reply_to(
         message,
-        "🔍 *Мониторинг рынка включен!*\n\n"
-        "Я буду следить за ценами и уведомлять вас о движениях > 1%.\n\n"
-        "⚙️ Проверка каждые 5 минут.\n"
-        "🔕 Чтобы выключить, используйте /stop_monitor",
+        "🔍 *Market monitoring is enabled!*\n\n"
+        "I will keep an eye on the prices and notify you of the movements. > 1%.\n\n"
+        "⚙️ Check every 5 minutes.\n"
+        "🔕 To turn it off, use /stop_monitor",
     )
 
 
 @bot.message_handler(commands=["stop_monitor"])
 def stop_monitor(message):
-    """Выключает автоматический мониторинг"""
+    """Disables automatic monitoring"""
+
     market_monitor.stop_monitoring()
     bot.reply_to(
         message,
-        "🔕 *Мониторинг рынка выключен.*\n\n"
-        "Чтобы включить снова, используйте /start_monitor",
+        "🔕 *Market monitoring is disabled.*\n\n"
+        "To enable it again, use /start_monitor",
     )
 
 
 @bot.message_handler(commands=["status_monitor"])
 def status_monitor(message):
-    """Показывает статус мониторинга"""
+    """Shows the monitoring status"""
+
     if market_monitor.running:
-        # Показываем последние цены
+        # Showing the latest prices
         prices = market_monitor.get_current_prices()
-        status_text = "📊 *Статус мониторинга*\n\n"
-        status_text += "🟢 *Активен*\n"
-        status_text += "⏱️ Проверка каждые 5 минут\n\n"
-        status_text += "*Последние цены:*\n"
+        status_text = "📊 *Monitoring status*\n\n"
+        status_text += "🟢 *Active*\n"
+        status_text += "⏱️ Check every 5 minutes\n\n"
+        status_text += "*Recent prices:*\n"
 
         for symbol, price in prices.items():
             if price:
@@ -580,34 +591,36 @@ def status_monitor(message):
             else:
                 status_text += f"• {symbol}: ❌ Ошибка\n"
     else:
-        status_text = "📊 *Статус мониторинга*\n\n"
-        status_text += "🔴 *Выключен*\n"
-        status_text += "Чтобы включить, используйте /start_monitor"
+        status_text = "📊 *Monitoring status*\n\n"
+        status_text += "🔴 *Turned off*\n"
+        status_text += "To enable it, use /start_monitor"
 
     bot.reply_to(message, status_text)
 
 
 @bot.message_handler(commands=["debug_monitor"])
 def debug_monitor(message):
-    """Полная отладка монитора"""
-    text = "🔍 *Отладка монитора*\n\n"
+    """Full debugging of the monitor"""
+
+    text = "🔍 *Debugging the monitor*\n\n"
     text += f"🟢 running = {market_monitor.running}\n"
     text += f"📌 chat_id = {market_monitor.chat_id}\n"
     text += f"📦 last_prices = {market_monitor.last_prices}\n"
 
     if market_monitor.thread and market_monitor.thread.is_alive():
-        text += "🧵 Поток мониторинга: **ЖИВ**\n"
+        text += "🧵 Monitoring flow: **ALIVE**\n"
     else:
-        text += "🧵 Поток мониторинга: **МЕРТВ**\n"
+        text += "🧵 Monitoring flow: **DEAD**\n"
 
     bot.reply_to(message, text, parse_mode="Markdown")
 
 
 def health_check():
-    """Каждые 30 секунд выводит 'Бот жив' в консоль."""
+    """Every 30 seconds it outputs 'The bot is alive' to the console."""
+
     while True:
         time.sleep(30)
-        logging.info("💚 Бот жив и работает")
+        logging.info("💚 The bot is alive and working")
 
 
 thread = threading.Thread(target=health_check, daemon=True)
@@ -621,11 +634,11 @@ logging.basicConfig(
 def run_bot():
     while True:
         try:
-            logging.info("🚀 Бот запущен!")
+            logging.info("🚀 The bot is running!")
             bot.polling(none_stop=True, timeout=60, long_polling_timeout=60)
         except Exception as e:
-            logging.error(f"❌ Ошибка: {e}")
-            logging.info("🔄 Перезапуск через 10 секунд...")
+            logging.error(f"❌ Mistake: {e}")
+            logging.info("🔄 Restart after 10 seconds...")
             time.sleep(10)
             continue
         break

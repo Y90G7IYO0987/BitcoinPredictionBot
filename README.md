@@ -6,8 +6,6 @@
   <img src="assets/Banner.jpg" alt="Cryptocurrency banner" width="800">
 </p>
 
-# 🎌 Anime Stats Telegram Bot
-
 [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
